@@ -52,21 +52,22 @@ jobs:
       - name: Run specs
         run: bundle exec rspec --format progress
 
-  deploy:
-    needs: [lint, test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Deploy with Kamal
-        run: bundle exec kamal deploy
-        env:
-          KAMAL_REGISTRY_USERNAME: ${{ github.actor }}
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+  # Uncomment when ready to deploy
+  # deploy:
+  #   needs: [lint, test]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         bundler-cache: true
+  #     - uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #     - name: Deploy with Kamal
+  #       run: bundle exec kamal deploy
+  #       env:
+  #         KAMAL_REGISTRY_USERNAME: ${{ github.actor }}
+  #         KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  #         RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}

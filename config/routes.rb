@@ -19,7 +19,7 @@ Rails.application.routes.draw do
     member do
       post :switch
     end
-    resources :memberships, only: [:index, :create, :update, :destroy]
+    resources :memberships, only: [ :index, :create, :update, :destroy ]
   end
 
   # Billing

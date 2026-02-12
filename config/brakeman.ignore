@@ -1,0 +1,46 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "fa1d2e7c5f2e2e5bfc5b02b3e96e6e74d6d4d4e4c5c5c5c5c5c5c5c5c5c5c5c5",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/billing_controller.rb",
+      "line": 18,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(Current.account.payment_processor.billing_portal.url, :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BillingController",
+        "method": "portal"
+      },
+      "user_input": "Current.account.payment_processor.billing_portal.url",
+      "confidence": "Weak",
+      "note": "Redirecting to Stripe billing portal - this is intentional and safe"
+    },
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/billing_controller.rb",
+      "line": 32,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(Current.account.payment_processor.checkout(...).url, :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "BillingController",
+        "method": "checkout"
+      },
+      "user_input": "Current.account.payment_processor.checkout(...).url",
+      "confidence": "Weak",
+      "note": "Redirecting to Stripe checkout - this is intentional and safe"
+    }
+  ],
+  "updated": "2026-02-12 14:41:00 -0600",
+  "brakeman_version": "8.0.2"
+}

@@ -24,7 +24,7 @@ class BillingController < ApplicationController
 
     checkout_session = Current.account.payment_processor.checkout(
       mode: "subscription",
-      line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
+      line_items: [ { price: plan.stripe_price_id, quantity: 1 } ],
       success_url: billing_url(checkout: "success"),
       cancel_url: billing_url
     )

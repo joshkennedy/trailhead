@@ -2,8 +2,8 @@
 
 class MembershipsController < ApplicationController
   before_action :set_account
-  before_action :require_admin!, except: [:index]
-  before_action :set_membership, only: [:update, :destroy]
+  before_action :require_admin!, except: [ :index ]
+  before_action :set_membership, only: [ :update, :destroy ]
 
   def index
     @memberships = @account.memberships.includes(:user).order(:role, :created_at)
@@ -68,6 +68,6 @@ class MembershipsController < ApplicationController
   end
 
   def membership_params
-    params.expect(membership: [:role])
+    params.expect(membership: [ :role ])
   end
 end

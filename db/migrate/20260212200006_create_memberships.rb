@@ -16,10 +16,10 @@ class CreateMemberships < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :memberships, [:user_id, :account_id], unique: true
-    add_index :memberships, [:account_id, :role]
-    add_index :memberships, [:account_id, :status]
-    add_index :memberships, [:account_id, :status, :role]
+    add_index :memberships, [ :user_id, :account_id ], unique: true
+    add_index :memberships, [ :account_id, :role ]
+    add_index :memberships, [ :account_id, :status ]
+    add_index :memberships, [ :account_id, :status, :role ]
 
     add_check_constraint :memberships, "role IN ('owner', 'admin', 'member')", name: "memberships_role_check"
     add_check_constraint :memberships, "status IN ('invited', 'active', 'suspended')", name: "memberships_status_check"

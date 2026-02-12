@@ -95,17 +95,17 @@ end
 # == Memberships ==
 memberships = [
   # Acme Corp team
-  [owner, acme, "owner"],
-  [alice, acme, "admin"],
-  [bob, acme, "member"],
-  [admin, acme, "admin"],
+  [ owner, acme, "owner" ],
+  [ alice, acme, "admin" ],
+  [ bob, acme, "member" ],
+  [ admin, acme, "admin" ],
 
   # Startup Labs
-  [dana, startup, "owner"],
-  [alice, startup, "member"],
+  [ dana, startup, "owner" ],
+  [ alice, startup, "member" ],
 
   # Admin's personal account
-  [admin, admin_account, "owner"],
+  [ admin, admin_account, "owner" ]
 ]
 
 memberships.each do |user, account, role|
