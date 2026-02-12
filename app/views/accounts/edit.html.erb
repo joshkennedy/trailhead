@@ -1,0 +1,6 @@
+<% content_for(:title) { "Edit #{@account.name} — Trailhead" } %>
+
+<div class="max-w-lg mx-auto">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Edit Account</h1>
+  <%= render "form", account: @account %>
+</div>

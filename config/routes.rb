@@ -27,6 +27,11 @@ Rails.application.routes.draw do
   post "billing/checkout", to: "billing#checkout",  as: :billing_checkout
   get  "billing/portal",   to: "billing#portal",    as: :billing_portal
 
+  # Admin (Madmin) — restricted to admin users
+  authenticate :user, ->(u) { u.admin? } do
+    mount Madmin::Engine, at: "/madmin"
+  end
+
   # Root
   root "dashboard#show"
 end
