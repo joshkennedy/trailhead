@@ -1,26 +1,24 @@
-# Trailhead
+# README
 
-**Where every Rails journey begins.**
+This README would normally document whatever steps are necessary to get the
+application up and running.
 
-A production-ready Rails 8 starter template from Outpost Labs.
+Things you may want to cover:
 
-## Status
+* Ruby version
 
-🚧 **Under construction** — Agents are building this now.
+* System dependencies
 
-## Planned Features
+* Configuration
 
-- Rails 8 + Turbo + Stimulus
-- Multi-tenancy (organization/workspace-based)
-- Authentication (Devise + magic links + TOTP)
-- Payments (Stripe via Pay gem)
-- Team/role management
-- Admin interface
-- Tailwind + RailsBlocks
-- Kamal deployments (Hetzner-ready)
-- Solid Queue background jobs
-- Honeybadger error tracking
+* Database creation
 
----
+* Database initialization
 
-More details coming soon.
+* How to run the test suite
+
+* Services (job queues, cache servers, search engines, etc.)
+
+* Deployment instructions
+
+* ...
