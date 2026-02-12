@@ -41,7 +41,7 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 # Authentication
-gem "devise", "~> 4.9"
+gem "devise", "~> 5.0"
 gem "devise-passwordless"    # Magic link authentication
 gem "devise-two-factor"      # TOTP 2FA
 gem "rqrcode"                # QR codes for TOTP setup
