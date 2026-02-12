@@ -1,0 +1,17 @@
+<% if notice.present? %>
+  <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800" data-controller="dismissable">
+    <div class="flex justify-between">
+      <span><%= notice %></span>
+      <button data-action="click->dismissable#dismiss" class="font-bold text-green-600 hover:text-green-800">&times;</button>
+    </div>
+  </div>
+<% end %>
+
+<% if alert.present? %>
+  <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800" data-controller="dismissable">
+    <div class="flex justify-between">
+      <span><%= alert %></span>
+      <button data-action="click->dismissable#dismiss" class="font-bold text-red-600 hover:text-red-800">&times;</button>
+    </div>
+  </div>
+<% end %>

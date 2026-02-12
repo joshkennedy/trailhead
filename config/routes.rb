@@ -1,14 +1,32 @@
-Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+# frozen_string_literal: true
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+Rails.application.routes.draw do
+  # Devise authentication
+  devise_for :users
+
+  # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # PWA
+  get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Dashboard
+  get "dashboard", to: "dashboard#show", as: :dashboard
+
+  # Accounts (tenants) & Team Management
+  resources :accounts do
+    member do
+      post :switch
+    end
+    resources :memberships, only: [:index, :create, :update, :destroy]
+  end
+
+  # Billing
+  get  "billing",          to: "billing#show",     as: :billing
+  post "billing/checkout", to: "billing#checkout",  as: :billing_checkout
+  get  "billing/portal",   to: "billing#portal",    as: :billing_portal
+
+  # Root
+  root "dashboard#show"
 end
