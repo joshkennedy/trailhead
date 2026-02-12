@@ -47,7 +47,7 @@ gem "devise-two-factor"      # TOTP 2FA
 gem "rqrcode"                # QR codes for TOTP setup
 
 # Payments
-gem "pay", "~> 7.0"
+gem "pay", "~> 11.4"
 gem "stripe", "~> 12.0"
 
 # Admin
