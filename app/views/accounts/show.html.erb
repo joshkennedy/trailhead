@@ -1,0 +1,48 @@
+<% content_for(:title) { "#{@account.name} — Trailhead" } %>
+
+<div class="space-y-6">
+  <div class="flex justify-between items-center">
+    <h1 class="text-3xl font-bold text-gray-900"><%= @account.name %></h1>
+    <% if current_user.admin_of?(@account) %>
+      <%= link_to "Edit", edit_account_path(@account),
+          class: "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm" %>
+    <% end %>
+  </div>
+
+  <div class="grid gap-6 sm:grid-cols-3">
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-500">Members</p>
+      <p class="text-2xl font-bold"><%= @account.memberships.active.count %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-500">Your Role</p>
+      <p class="text-2xl font-bold"><%= current_user.role_in(@account)&.titleize || "—" %></p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-500">Created</p>
+      <p class="text-2xl font-bold"><%= @account.created_at.strftime("%b %Y") %></p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-lg font-medium text-gray-800 mb-2">Details</h3>
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-gray-500">Slug</dt>
+        <dd class="font-mono"><%= @account.slug %></dd>
+      </div>
+      <div>
+        <dt class="text-gray-500">Billing Email</dt>
+        <dd><%= @account.billing_email || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-gray-500">Owner</dt>
+        <dd><%= @account.owner.name %></dd>
+      </div>
+      <div>
+        <dt class="text-gray-500">Status</dt>
+        <dd><%= @account.suspended? ? "Suspended" : "Active" %></dd>
+      </div>
+    </dl>
+  </div>
+</div>

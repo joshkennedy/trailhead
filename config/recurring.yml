@@ -13,3 +13,11 @@ production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+
+  cleanup_expired_sessions:
+    class: CleanupExpiredSessionsJob
+    schedule: at 3am every day
+
+  report_usage_to_stripe:
+    command: "Account.active.find_each { |a| ReportUsageToStripeJob.perform_later(a) }"
+    schedule: at 2am every day

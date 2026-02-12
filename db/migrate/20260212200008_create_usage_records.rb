@@ -14,8 +14,8 @@ class CreateUsageRecords < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :usage_records, [:account_id, :metric, :recorded_at]
-    add_index :usage_records, [:account_id, :reported_to_stripe]
+    add_index :usage_records, [ :account_id, :metric, :recorded_at ]
+    add_index :usage_records, [ :account_id, :reported_to_stripe ]
     add_index :usage_records, :recorded_at
   end
 end

@@ -14,7 +14,7 @@ class CreateUserSessions < ActiveRecord::Migration[8.1]
     end
 
     add_index :user_sessions, :session_token, unique: true
-    add_index :user_sessions, [:user_id, :last_active_at]
+    add_index :user_sessions, [ :user_id, :last_active_at ]
     add_index :user_sessions, :expires_at
   end
 end

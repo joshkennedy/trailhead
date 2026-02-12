@@ -1,0 +1,53 @@
+<% content_for(:title) { "Dashboard — Trailhead" } %>
+
+<div class="space-y-8">
+  <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+
+  <% if @account %>
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800"><%= @account.name %></h2>
+          <p class="text-sm text-gray-500 mt-1">
+            <%= @account.memberships.active.count %> members
+            <% if @account.suspended? %>
+              · <span class="text-red-600 font-medium">Suspended</span>
+            <% end %>
+          </p>
+        </div>
+        <%= link_to "Settings", edit_account_path(@account),
+            class: "text-sm text-indigo-600 hover:text-indigo-800" if current_user.admin_of?(@account) %>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-white rounded-lg shadow p-6 text-center">
+      <p class="text-gray-500 mb-4">You're not part of any account yet.</p>
+      <%= link_to "Create Account", new_account_path,
+          class: "inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700" %>
+    </div>
+  <% end %>
+
+  <% if @memberships.any? %>
+    <div>
+      <h3 class="text-lg font-medium text-gray-800 mb-3">Your Accounts</h3>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <% @memberships.each do |membership| %>
+          <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition cursor-pointer"
+               onclick="document.getElementById('switch-<%= membership.account_id %>').click()">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-lg font-medium text-indigo-600"><%= membership.account.name %></p>
+                <p class="text-sm text-gray-500 mt-1">Role: <%= membership.role.titleize %></p>
+              </div>
+              <% if membership.account == @account %>
+                <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">Active</span>
+              <% end %>
+            </div>
+            <%= button_to "", switch_account_path(membership.account), method: :post,
+                id: "switch-#{membership.account_id}", class: "hidden" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

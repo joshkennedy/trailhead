@@ -19,13 +19,18 @@ Rails.application.routes.draw do
     member do
       post :switch
     end
-    resources :memberships, only: [:index, :create, :update, :destroy]
+    resources :memberships, only: [ :index, :create, :update, :destroy ]
   end
 
   # Billing
   get  "billing",          to: "billing#show",     as: :billing
   post "billing/checkout", to: "billing#checkout",  as: :billing_checkout
   get  "billing/portal",   to: "billing#portal",    as: :billing_portal
+
+  # Admin (Madmin) — restricted to admin users
+  authenticate :user, ->(u) { u.admin? } do
+    mount Madmin::Engine, at: "/madmin"
+  end
 
   # Root
   root "dashboard#show"

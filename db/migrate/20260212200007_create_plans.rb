@@ -22,6 +22,6 @@ class CreatePlans < ActiveRecord::Migration[8.1]
 
     add_index :plans, :slug, unique: true
     add_index :plans, :stripe_price_id, unique: true
-    add_index :plans, [:visible, :position]
+    add_index :plans, [ :visible, :position ]
   end
 end

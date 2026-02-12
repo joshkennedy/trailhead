@@ -73,7 +73,7 @@ class CreateMagicLinks < ActiveRecord::Migration[8.0]
     end
 
     add_index :magic_links, :token_digest, unique: true
-    add_index :magic_links, [:user_id, :consumed_at]
+    add_index :magic_links, [ :user_id, :consumed_at ]
     add_index :magic_links, :expires_at
   end
 end
@@ -83,16 +83,16 @@ class CreateTotpCredentials < ActiveRecord::Migration[8.0]
   def change
     create_table :totp_credentials, id: :uuid do |t|
       t.references :user, null: false, foreign_key: true, type: :uuid, index: { unique: true }
-      
+
       # Encrypted OTP secret (use Rails 7+ encryption or attr_encrypted gem)
       t.string :otp_secret_encrypted, null: false
-      
+
       # Backup/recovery codes (store bcrypt hashes)
       t.jsonb :recovery_codes, default: []
-      
+
       # Track when 2FA was enabled
       t.datetime :enabled_at
-      
+
       # Last successful TOTP validation (for rate limiting)
       t.datetime :last_used_at
       t.integer :failed_attempts, default: 0
@@ -107,11 +107,11 @@ class CreateSessions < ActiveRecord::Migration[8.0]
   def change
     create_table :sessions, id: :uuid do |t|
       t.references :user, null: false, foreign_key: true, type: :uuid
-      
+
       t.string :session_token, null: false  # Secure random token
       t.string :user_agent                  # Browser fingerprint
       t.inet :ip_address                    # Login IP
-      
+
       t.datetime :last_active_at           # Touch on each request
       t.datetime :expires_at               # 30 days from creation
 
@@ -119,7 +119,7 @@ class CreateSessions < ActiveRecord::Migration[8.0]
     end
 
     add_index :sessions, :session_token, unique: true
-    add_index :sessions, [:user_id, :last_active_at]
+    add_index :sessions, [ :user_id, :last_active_at ]
     add_index :sessions, :expires_at
   end
 end
@@ -133,18 +133,18 @@ class CreateAccounts < ActiveRecord::Migration[8.0]
     create_table :accounts, id: :uuid do |t|
       t.string :name, null: false
       t.string :slug, null: false          # URL-friendly identifier
-      
+
       # Owner reference (user who created the account)
       t.references :owner, null: false, foreign_key: { to_table: :users }, type: :uuid
-      
+
       # Billing
       t.string :billing_email              # May differ from owner email
       t.string :tax_id                     # VAT, EIN, etc.
-      
+
       # Account status
       t.datetime :suspended_at             # Admin can suspend accounts
       t.string :suspension_reason
-      
+
       # Settings (JSON blob for flexibility)
       t.jsonb :settings, default: {}
       # Example settings:
@@ -169,20 +169,20 @@ class CreateMemberships < ActiveRecord::Migration[8.0]
     create_table :memberships, id: :uuid do |t|
       t.references :user, null: false, foreign_key: true, type: :uuid
       t.references :account, null: false, foreign_key: true, type: :uuid
-      
+
       # Role-based access
       t.string :role, null: false, default: "member"
       # Enum: owner, admin, member
-      
+
       # Status
       t.string :status, null: false, default: "invited"
       # Enum: invited, active, suspended
-      
+
       # Invitation tracking
       t.references :invited_by, foreign_key: { to_table: :users }, type: :uuid
       t.datetime :invited_at
       t.datetime :accepted_at
-      
+
       # Suspension (by admin)
       t.datetime :suspended_at
       t.string :suspended_reason
@@ -190,9 +190,9 @@ class CreateMemberships < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :memberships, [:user_id, :account_id], unique: true
-    add_index :memberships, [:account_id, :role]
-    add_index :memberships, [:account_id, :status]
+    add_index :memberships, [ :user_id, :account_id ], unique: true
+    add_index :memberships, [ :account_id, :role ]
+    add_index :memberships, [ :account_id, :status ]
   end
 end
 
@@ -209,29 +209,29 @@ class CreatePlans < ActiveRecord::Migration[8.0]
     create_table :plans, id: :uuid do |t|
       t.string :name, null: false                  # "Starter", "Pro", "Enterprise"
       t.string :slug, null: false                  # "starter", "pro", "enterprise"
-      
+
       # Stripe references
       t.string :stripe_price_id                    # price_xxx from Stripe
       t.string :stripe_product_id                  # prod_xxx from Stripe
-      
+
       # Pricing
       t.integer :amount_cents, null: false, default: 0
       t.string :currency, null: false, default: "usd"
       t.string :interval, null: false, default: "month"  # month, year
-      
+
       # Limits
       t.integer :seat_limit, default: 5            # Max users per account
       t.jsonb :usage_limits, default: {}
       # Example: { "api_calls": 10000, "storage_gb": 10 }
-      
+
       # Features (boolean flags)
       t.jsonb :features, default: {}
       # Example: { "api_access": true, "advanced_reports": false, "sso": false }
-      
+
       # Visibility
       t.boolean :visible, default: true            # Show on pricing page?
       t.integer :position, default: 0              # Sort order
-      
+
       t.text :description
 
       t.timestamps
@@ -239,7 +239,7 @@ class CreatePlans < ActiveRecord::Migration[8.0]
 
     add_index :plans, :slug, unique: true
     add_index :plans, :stripe_price_id, unique: true
-    add_index :plans, [:visible, :position]
+    add_index :plans, [ :visible, :position ]
   end
 end
 
@@ -248,13 +248,13 @@ class CreateUsageRecords < ActiveRecord::Migration[8.0]
   def change
     create_table :usage_records, id: :uuid do |t|
       t.references :account, null: false, foreign_key: true, type: :uuid
-      
+
       t.string :metric, null: false               # "api_calls", "storage_gb", etc.
       t.integer :quantity, null: false, default: 1
-      
+
       t.datetime :recorded_at, null: false        # When usage occurred
       t.jsonb :metadata, default: {}              # Optional context
-      
+
       # Stripe reporting
       t.boolean :reported_to_stripe, default: false
       t.datetime :reported_at
@@ -262,8 +262,8 @@ class CreateUsageRecords < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :usage_records, [:account_id, :metric, :recorded_at]
-    add_index :usage_records, [:account_id, :reported_to_stripe]
+    add_index :usage_records, [ :account_id, :metric, :recorded_at ]
+    add_index :usage_records, [ :account_id, :reported_to_stripe ]
     add_index :usage_records, :recorded_at
   end
 end
@@ -278,23 +278,23 @@ class CreateProjects < ActiveRecord::Migration[8.0]
     create_table :projects, id: :uuid do |t|
       # CRITICAL: Every tenant-scoped model MUST have account_id
       t.references :account, null: false, foreign_key: true, type: :uuid
-      
+
       # Creator
       t.references :created_by, null: false, foreign_key: { to_table: :users }, type: :uuid
-      
+
       # Project data
       t.string :name, null: false
       t.text :description
       t.string :status, default: "active"         # active, archived, deleted
-      
+
       # Metadata
       t.jsonb :metadata, default: {}
 
       t.timestamps
     end
 
-    add_index :projects, [:account_id, :status]
-    add_index :projects, [:account_id, :name]
+    add_index :projects, [ :account_id, :status ]
+    add_index :projects, [ :account_id, :name ]
   end
 end
 
@@ -306,16 +306,16 @@ end
 class AddPerformanceIndexes < ActiveRecord::Migration[8.0]
   def change
     # Users: Fast lookup by confirmation status
-    add_index :users, [:confirmed_at, :created_at]
-    
+    add_index :users, [ :confirmed_at, :created_at ]
+
     # Accounts: Active accounts only
-    add_index :accounts, [:suspended_at, :created_at]
-    
+    add_index :accounts, [ :suspended_at, :created_at ]
+
     # Memberships: Active members per account
-    add_index :memberships, [:account_id, :status, :role]
-    
+    add_index :memberships, [ :account_id, :status, :role ]
+
     # Sessions: Cleanup expired sessions
-    add_index :sessions, [:expires_at, :last_active_at]
+    add_index :sessions, [ :expires_at, :last_active_at ]
   end
 end
 

@@ -19,7 +19,7 @@ class MagicLink < ApplicationRecord
       ip_address: request&.remote_ip,
       user_agent: request&.user_agent
     )
-    [magic_link, token]
+    [ magic_link, token ]
   end
 
   def self.find_by_token(token)

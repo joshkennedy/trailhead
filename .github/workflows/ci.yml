@@ -1,67 +1,73 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  RAILS_ENV: test
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/trailhead_test
 
 jobs:
-  scan_ruby:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-
-      - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
-      
-      - name: Scan for known security vulnerabilities in gems used
-        run: bin/bundler-audit
-      
-  scan_js:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-
-      - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
-
   lint:
     runs-on: ubuntu-latest
-    env:
-      RUBOCOP_CACHE_ROOT: tmp/rubocop
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+      - name: RuboCop
+        run: bundle exec rubocop --parallel
+      - name: Brakeman
+        run: bundle exec brakeman --no-pager -q
+      - name: Bundle Audit
+        run: bundle exec bundler-audit check --update
 
-      - name: Prepare RuboCop cache
-        uses: actions/cache@v4
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
         env:
-          DEPENDENCIES_HASH: ${{ hashFiles('.ruby-version', '**/.rubocop.yml', '**/.rubocop_todo.yml', 'Gemfile.lock') }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trailhead_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
         with:
-          path: ${{ env.RUBOCOP_CACHE_ROOT }}
-          key: rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-${{ github.ref_name == github.event.repository.default_branch && github.run_id || 'default' }}
-          restore-keys: |
-            rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-
+          bundler-cache: true
+      - name: Setup database
+        run: bin/rails db:schema:load
+      - name: Run specs
+        run: bundle exec rspec --format progress
 
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
-
+  # Uncomment when ready to deploy
+  # deploy:
+  #   needs: [lint, test]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         bundler-cache: true
+  #     - uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #     - name: Deploy with Kamal
+  #       run: bundle exec kamal deploy
+  #       env:
+  #         KAMAL_REGISTRY_USERNAME: ${{ github.actor }}
+  #         KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  #         RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class AccountsController < ApplicationController
-  before_action :set_account, only: [:show, :edit, :update]
-  before_action :require_admin!, only: [:edit, :update]
+  before_action :set_account, only: [ :show, :edit, :update ]
+  before_action :require_admin!, only: [ :edit, :update ]
 
   def index
     @accounts = current_user.accounts
@@ -58,6 +58,6 @@ class AccountsController < ApplicationController
   end
 
   def account_params
-    params.expect(account: [:name, :billing_email, :tax_id])
+    params.expect(account: [ :name, :billing_email, :tax_id ])
   end
 end

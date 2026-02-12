@@ -41,14 +41,14 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 # Authentication
-gem "devise", "~> 4.9"
+gem "devise", "~> 5.0"
 gem "devise-passwordless"    # Magic link authentication
 gem "devise-two-factor"      # TOTP 2FA
 gem "rqrcode"                # QR codes for TOTP setup
 
 # Payments
 gem "pay", "~> 11.4"
-gem "stripe", "~> 12.0"
+gem "stripe", "~> 18.3"
 
 # Admin
 gem "madmin"
@@ -70,7 +70,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   # Testing
-  gem "rspec-rails", "~> 7.0"
+  gem "rspec-rails", "~> 8.0"
   gem "factory_bot_rails", "~> 6.0"
   gem "faker", "~> 3.0"
   gem "shoulda-matchers"

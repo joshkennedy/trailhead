@@ -1,0 +1,26 @@
+<% content_for(:title) { "Accounts — Trailhead" } %>
+
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-bold text-gray-900">Accounts</h1>
+  <%= link_to "New Account", new_account_path,
+      class: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm" %>
+</div>
+
+<div class="bg-white shadow rounded-lg divide-y">
+  <% @accounts.each do |account| %>
+    <div class="p-4 flex justify-between items-center">
+      <div>
+        <%= link_to account.name, account_path(account), class: "text-lg font-medium text-indigo-600 hover:text-indigo-800" %>
+        <p class="text-sm text-gray-500"><%= account.slug %> · <%= account.memberships.active.count %> members</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <% if account == current_account %>
+          <span class="text-xs font-medium text-indigo-600">Current</span>
+        <% else %>
+          <%= button_to "Switch", switch_account_path(account), method: :post,
+              class: "text-sm text-indigo-600 hover:text-indigo-800" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

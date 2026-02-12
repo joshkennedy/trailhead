@@ -1,143 +1,125 @@
-# Trailhead
+![Trailhead Banner](public/banner.jpg)
 
-**A modern Rails 8 starter template for building SaaS applications**
+# Trailhead — Rails 8 SaaS Starter Template
 
-Trailhead is a production-ready Rails 8 starter template that gives you everything you need to launch a SaaS app: authentication, payments, multi-tenancy, admin interface, and one-command deployment. Built on Rails 8's modern defaults with carefully selected gems for common SaaS features.
+**The boring stuff, already done.**
 
-## 🚀 Quick Start
+Production-ready Rails 8 starter for B2B SaaS with multi-tenancy, team management, Stripe billing, and admin dashboard.
+
+## Stack
+
+- **Rails 8.1** with Hotwire (Turbo + Stimulus)
+- **PostgreSQL** with UUID primary keys
+- **Tailwind CSS** via `tailwindcss-rails`
+- **Devise** authentication (email/password + magic links + TOTP 2FA)
+- **Pay** gem for Stripe billing (subscriptions + usage metering)
+- **Madmin** admin dashboard
+- **Solid Queue** / **Solid Cache** / **Solid Cable** (database-backed infra, no Redis required)
+- **Kamal** deployment (Hetzner-ready)
+- **Honeybadger** error tracking
+- **RSpec** + **FactoryBot** testing
+
+## Architecture
+
+### Multi-Tenancy
+
+Row-level tenancy via the `Account` model. Every tenant-scoped model includes the `AccountScoped` concern:
+
+```ruby
+class Project < ApplicationRecord
+  include AccountScoped
+end
+
+# In controllers — explicit scoping (no default_scope magic):
+@projects = Project.current.order(created_at: :desc)
+```
+
+`Current.account` is set per-request in `ApplicationController` via the `AccountScoping` concern.
+
+### Team Roles
+
+Three roles with cascading permissions: `owner > admin > member`
+
+| Role | Billing | Invite Members | Read/Write Data |
+|------|---------|----------------|-----------------|
+| Owner | ✅ | ✅ | ✅ |
+| Admin | ❌ | ✅ | ✅ |
+| Member | ❌ | ❌ | ✅ |
+
+### Billing
+
+Stripe integration via Pay gem. Database-backed `Plan` model with:
+- Flat monthly/annual pricing
+- Seat limits
+- Usage quotas (API calls, storage)
+- Feature flags
+
+### Sessions
+
+Single-device enforcement — new login destroys previous session. Sessions expire after 30 days of inactivity.
+
+## Quick Start
 
 ```bash
-# Clone the template
-git clone https://github.com/your-org/trailhead.git my-app
-cd my-app
+git clone <repo-url> trailhead
+cd trailhead
 
-# Install dependencies
 bundle install
+
+# Create and migrate database
 bin/rails db:create db:migrate db:seed
 
-# Start the dev server
+# Start development server
 bin/dev
 ```
 
-Visit `http://localhost:3000` and you're running.
+## Demo Accounts
 
-## ✨ Features
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@trailhead.dev | password123 |
+| Owner | james@acmecorp.dev | password123 |
+| Member | alice@acmecorp.dev | password123 |
 
-### Core Rails 8
-- **Rails 8.1.2** with all the latest improvements
-- **Turbo & Stimulus** for reactive UIs without heavy JavaScript
-- **Tailwind CSS** for utility-first styling
-- **Propshaft** for modern asset pipeline
-- **PostgreSQL** as the default database
+## Admin Dashboard
 
-### Authentication & Authorization
-- **Devise** with passwordless (magic link) and 2FA support
-- **Pundit** for authorization policies
-- Multi-tenancy scoping with **acts_as_tenant**
+Madmin admin at `/madmin`. Restricted to users with `admin: true`.
 
-### Payments
-- **Pay gem** for subscription management
-- **Stripe** integration (easily swap for other providers)
+## Environment Variables
 
-### Background Jobs
-- **Solid Queue** (database-backed, no Redis required)
-- Runs in-process with Puma for single-server setups
-- Easy to scale to dedicated job workers
+See `.env.example` for the full list. Key ones:
 
-### Admin
-- **Avo** admin interface (beautiful, customizable, Rails-native)
-
-### Deployment
-- **Kamal 2** configuration for zero-downtime Docker deployments
-- **Thruster** for HTTP caching and SSL termination
-- **Solid Cache** and **Solid Cable** (database-backed, production-ready)
-- Dockerfile optimized for fast builds and small images
-
-### Developer Experience
-- **RSpec** for testing (with FactoryBot and Faker)
-- **Rubocop** with Rails Omakase style
-- **Brakeman** and **bundler-audit** for security scanning
-- **Debug** gem for interactive debugging
-
-## 📦 Tech Stack
-
-| Layer           | Technology          | Why                                    |
-|-----------------|---------------------|----------------------------------------|
-| Framework       | Rails 8.1           | Modern Rails with all the good stuff  |
-| Database        | PostgreSQL          | Reliable, full-featured SQL           |
-| Caching         | Solid Cache         | Database-backed, no extra infra       |
-| Jobs            | Solid Queue         | Database-backed, simple & reliable    |
-| Realtime        | Solid Cable         | Database-backed Action Cable          |
-| Frontend        | Hotwire + Tailwind  | Fast UIs without heavy JS             |
-| Auth            | Devise              | Battle-tested authentication          |
-| Payments        | Pay + Stripe        | Flexible subscription billing         |
-| Admin           | Avo                 | Modern admin interface                |
-| Deploy          | Kamal 2             | Docker deploy to any server           |
-| Testing         | RSpec               | BDD-style testing                     |
-
-## 📖 Documentation
-
-- **[Setup Guide](docs/setup.md)** – Detailed installation and configuration
-- **[Customization](docs/customization.md)** – Adapt Trailhead for your project
-- **[Deployment](docs/deployment.md)** – Deploy to Hetzner with Kamal
-- **[Architecture](docs/architecture.md)** – How Trailhead is structured
-- **[RailsBlocks Integration](docs/rails-blocks.md)** – Add UI components
-- **[Agent Notes](AGENTS.md)** – Guidance for AI coding assistants
-
-## 🎯 Philosophy
-
-**Get to market fast, but don't accumulate tech debt.**
-
-Trailhead makes opinionated choices:
-- **Database-first**: Solid Queue, Solid Cache, Solid Cable eliminate external dependencies
-- **Boring tech**: PostgreSQL, Puma, Kamal – proven, reliable tools
-- **Modern Rails**: Hotwire over heavy JavaScript, Rails conventions over custom architecture
-- **Deploy anywhere**: Kamal lets you deploy to any server, no vendor lock-in
-
-## 🔧 Common Tasks
-
-```bash
-# Run tests
-bin/rspec
-
-# Run linters
-bin/rubocop
-bin/brakeman
-
-# Console
-bin/rails console
-
-# Database console
-bin/rails dbconsole
-
-# Check for security issues
-bundle exec bundler-audit check --update
-
-# Deploy to production
-bin/kamal deploy
+```
+DATABASE_URL=postgres://...
+STRIPE_SECRET_KEY=sk_...
+STRIPE_PUBLISHABLE_KEY=pk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+HONEYBADGER_API_KEY=...
 ```
 
-## 🚢 Deployment
+## Deployment
 
-Trailhead is configured for deployment via **Kamal 2** to any server. See [docs/deployment.md](docs/deployment.md) for a complete guide to deploying on Hetzner.
+Kamal config ready for Hetzner Cloud:
 
-One-command deploy after initial setup:
+1. Update `config/deploy.yml` with server IPs, domain, registry
+2. Set secrets in `.kamal/secrets`
+3. `kamal setup` (first deploy) or `kamal deploy` (subsequent)
+
+CI/CD via `.github/workflows/ci.yml`: RuboCop → Brakeman → Bundle Audit → RSpec → auto-deploy on main.
+
+## Testing
+
 ```bash
-bin/kamal deploy
+bundle exec rspec
 ```
 
-## 🤝 Contributing
+## Documentation
 
-This is a starter template – fork it and make it yours! If you find bugs or have ideas for improvements to the template itself, please open an issue or PR.
+- [Architecture Blueprint](.research-docs/architecture.md)
+- [Design Decisions](.research-docs/decisions.md)
+- [Research Findings](.research-docs/research-findings.md)
+- [RailsBlocks Integration](docs/rails-blocks.md)
 
-## 📄 License
+## License
 
-MIT License – see [LICENSE](LICENSE) for details.
-
-## 🙏 Acknowledgments
-
-Built on the shoulders of giants:
-- Rails team for Rails 8 and the Solid gems
-- The Hotwire team
-- Kamal and the deployment tooling ecosystem
-- All the gem maintainers
+MIT
