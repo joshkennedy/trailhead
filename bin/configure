@@ -1,0 +1,242 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Trailhead configurator — strip optional components.
+#
+# Interactive:
+#   bin/configure
+#
+# Non-interactive:
+#   bin/configure --db=sqlite --skip=honeybadger,email
+
+require "fileutils"
+require "optparse"
+
+ROOT = File.expand_path("..", __dir__)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def read_file(path)
+  File.read(File.join(ROOT, path))
+end
+
+def write_file(path, content)
+  File.write(File.join(ROOT, path), content)
+end
+
+def remove_file(path)
+  full = File.join(ROOT, path)
+  FileUtils.rm_f(full)
+  puts "  Removed #{path}"
+end
+
+def remove_line(path, pattern)
+  content = read_file(path)
+  original = content.dup
+  content.gsub!(/^.*#{Regexp.escape(pattern)}.*\n/, "")
+  if content != original
+    write_file(path, content)
+    puts "  Cleaned #{path}"
+  end
+end
+
+def remove_lines_matching(path, regex)
+  content = read_file(path)
+  original = content.dup
+  content.gsub!(regex, "")
+  if content != original
+    write_file(path, content)
+    puts "  Cleaned #{path}"
+  end
+end
+
+def ask(question, options)
+  puts "\n#{question}"
+  options.each_with_index { |(key, label), i| puts "  #{i + 1}) #{label}" }
+  print "> "
+  choice = $stdin.gets&.strip&.to_i || 1
+  options.keys[choice - 1] || options.keys.first
+end
+
+# ---------------------------------------------------------------------------
+# Parse flags
+# ---------------------------------------------------------------------------
+
+db_choice = nil
+skips = []
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/configure [options]"
+  opts.on("--db=DB", "Database: postgresql or sqlite") { |v| db_choice = v.downcase.to_sym }
+  opts.on("--skip=LIST", "Comma-separated: honeybadger,email") { |v| skips = v.split(",").map(&:strip).map(&:to_sym) }
+end.parse!
+
+# ---------------------------------------------------------------------------
+# Interactive prompts (skipped if flags provided)
+# ---------------------------------------------------------------------------
+
+puts "🔧 Trailhead Configurator"
+puts "=" * 40
+
+db_choice ||= ask("Which database?", {
+  postgresql: "PostgreSQL (recommended for production)",
+  sqlite: "SQLite (simpler, no external service needed)"
+})
+
+unless skips.any?
+  skip_honeybadger = ask("Error tracking?", {
+    keep: "Keep Honeybadger",
+    skip: "Remove Honeybadger"
+  })
+  skips << :honeybadger if skip_honeybadger == :skip
+
+  skip_email = ask("Email provider (Resend)?", {
+    keep: "Keep Resend references",
+    skip: "Remove Resend references"
+  })
+  skips << :email if skip_email == :skip
+end
+
+# ---------------------------------------------------------------------------
+# Apply: Database
+# ---------------------------------------------------------------------------
+
+puts "\n--- Database: #{db_choice} ---"
+
+gemfile = read_file("Gemfile")
+dockerfile = read_file("Dockerfile")
+database_yml = read_file("config/database.yml")
+
+if db_choice == :sqlite
+  # Remove pg gem
+  gemfile.gsub!(/^gem "pg".*\n/, "")
+  puts "  Removed pg from Gemfile"
+
+  # Remove PG packages from Dockerfile
+  dockerfile.gsub!(" postgresql-client", "")
+  dockerfile.gsub!(" libpq-dev", "")
+  puts "  Removed PostgreSQL packages from Dockerfile"
+
+  # Simplify database.yml to SQLite-only
+  write_file("config/database.yml", <<~YAML)
+    default: &default
+      adapter: sqlite3
+      pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+      timeout: 5000
+
+    development:
+      <<: *default
+      database: storage/development.sqlite3
+
+    test:
+      <<: *default
+      database: storage/test.sqlite3
+
+    production:
+      <<: *default
+      database: storage/production.sqlite3
+  YAML
+  puts "  Simplified database.yml for SQLite"
+
+elsif db_choice == :postgresql
+  # Remove sqlite3 gem
+  gemfile.gsub!(/^gem "sqlite3".*\n/, "")
+  puts "  Removed sqlite3 from Gemfile"
+
+  # Remove SQLite packages from Dockerfile
+  dockerfile.gsub!(" sqlite3", "")
+  dockerfile.gsub!(" libsqlite3-dev", "")
+  puts "  Removed SQLite packages from Dockerfile"
+
+  # Simplify database.yml to PG-only
+  write_file("config/database.yml", <<~YAML)
+    default: &default
+      adapter: postgresql
+      encoding: unicode
+      max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+    development:
+      <<: *default
+      database: trailhead_development
+
+    test:
+      <<: *default
+      database: trailhead_test
+
+    production:
+      primary: &primary_production
+        <<: *default
+        database: trailhead_production
+        username: trailhead
+        password: <%= ENV["TRAILHEAD_DATABASE_PASSWORD"] %>
+      cache:
+        <<: *primary_production
+        database: trailhead_production_cache
+        migrations_paths: db/cache_migrate
+      queue:
+        <<: *primary_production
+        database: trailhead_production_queue
+        migrations_paths: db/queue_migrate
+      cable:
+        <<: *primary_production
+        database: trailhead_production_cable
+        migrations_paths: db/cable_migrate
+  YAML
+  puts "  Simplified database.yml for PostgreSQL"
+end
+
+write_file("Gemfile", gemfile)
+write_file("Dockerfile", dockerfile)
+
+# ---------------------------------------------------------------------------
+# Apply: Honeybadger
+# ---------------------------------------------------------------------------
+
+if skips.include?(:honeybadger)
+  puts "\n--- Removing Honeybadger ---"
+
+  gemfile = read_file("Gemfile")
+  gemfile.gsub!(/^# Error tracking\n/, "")
+  gemfile.gsub!(/^gem "honeybadger".*\n/, "")
+  write_file("Gemfile", gemfile)
+  puts "  Removed honeybadger from Gemfile"
+
+  remove_file("config/initializers/honeybadger.rb")
+
+  # Remove from .env.example
+  env = read_file(".env.example")
+  env.gsub!(/^# === Error Tracking.*?\n(?:(?:#\s*)?HONEYBADGER_API_KEY.*\n)*/m, "")
+  write_file(".env.example", env)
+  puts "  Cleaned .env.example"
+
+  # Remove from deploy.yml
+  deploy = read_file("config/deploy.yml")
+  deploy.gsub!(/^\s*- HONEYBADGER_API_KEY\n/, "")
+  write_file("config/deploy.yml", deploy)
+  puts "  Cleaned config/deploy.yml"
+end
+
+# ---------------------------------------------------------------------------
+# Apply: Email (Resend)
+# ---------------------------------------------------------------------------
+
+if skips.include?(:email)
+  puts "\n--- Removing Resend references ---"
+
+  env = read_file(".env.example")
+  env.gsub!(/^# === Email.*?\n(?:(?:#\s*)?(?:RESEND_API_KEY|DEFAULT_FROM_EMAIL).*\n)*/m, "")
+  write_file(".env.example", env)
+  puts "  Cleaned .env.example"
+end
+
+# ---------------------------------------------------------------------------
+# Bundle install
+# ---------------------------------------------------------------------------
+
+puts "\n--- Running bundle install ---"
+Dir.chdir(ROOT) { system("bundle install") }
+
+puts "\n✅ Configuration complete!"
+puts "   Run `bin/rails db:prepare` to set up your database."

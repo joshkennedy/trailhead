@@ -174,38 +174,26 @@ When custom roles are needed (v2):
 
 ---
 
-## 6. UUID Primary Keys
+## 6. Standard Bigint Primary Keys
 
 ### Decision
-Use **UUIDs** instead of auto-incrementing integers for all primary keys.
+Use **standard bigint auto-increment IDs** for all primary keys.
 
 ### Rationale
-- **Security**: No sequential ID enumeration (prevents account ID guessing)
-- **Scalability**: Globally unique, works with distributed systems
-- **Merging Data**: Can combine databases without ID conflicts
-- **Rails 8**: First-class UUID support via `primary_key_type: :uuid`
+- **Database portability**: Works identically on PostgreSQL and SQLite
+- **Simplicity**: No extensions required, no generator config
+- **Performance**: Smaller indexes (8 bytes), sequential inserts are faster
+- **URL safety**: Slugs are used for public-facing URLs anyway (`/accounts/acme/projects`)
 
 ### Alternatives Considered
-- **Integer IDs**: Traditional, slightly faster, simpler
-- **Snowflake IDs**: Time-ordered UUIDs, more complexity
+- **UUIDs**: Non-guessable, globally unique, but require pgcrypto and break SQLite compatibility
+- **Snowflake IDs**: Time-ordered, more complexity than needed
 
 ### Trade-offs
-- ✅ **Pro**: Non-guessable URLs (`/accounts/550e8400-e29b-41d4-a716-446655440000/projects`)
-- ✅ **Pro**: Postgres `gen_random_uuid()` is fast
-- ✅ **Pro**: Easier to sync across environments (staging → prod)
-- ⚠️ **Con**: Slightly larger indexes (16 bytes vs 8 bytes)
-- ⚠️ **Con**: URLs are longer (mitigate with slugs: `/accounts/acme/projects`)
-
-### Implementation Notes
-```ruby
-# config/initializers/generators.rb
-Rails.application.config.generators do |g|
-  g.orm :active_record, primary_key_type: :uuid
-end
-
-# Migration
-enable_extension 'pgcrypto' unless extension_enabled?('pgcrypto')
-```
+- ✅ **Pro**: Works on both PostgreSQL and SQLite without changes
+- ✅ **Pro**: Simpler migrations, no extension setup
+- ✅ **Pro**: Better index performance
+- ⚠️ **Con**: Sequential IDs are enumerable (mitigated by slug-based URLs and authorization checks)
 
 ---
 
@@ -503,7 +491,7 @@ end
 | Billing | Pay gem + Stripe hybrid | Maximize revenue, minimize code |
 | Sessions | Single-device enforcement | Security > convenience for B2B |
 | Roles | Owner/Admin/Member (fixed) | Cover 90% of use cases simply |
-| IDs | UUIDs | Security, scalability, uniqueness |
+| IDs | Bigint (auto-increment) | Portability, simplicity, performance |
 | Jobs | Solid Queue | Rails 8 default, no Redis |
 | Scoping | Explicit (`current`) | Predictable, debuggable |
 | Email | Postmark | Best deliverability, great DX |

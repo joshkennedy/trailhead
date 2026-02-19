@@ -2,15 +2,15 @@
 
 class CreateAccounts < ActiveRecord::Migration[8.1]
   def change
-    create_table :accounts, id: :uuid do |t|
+    create_table :accounts do |t|
       t.string :name, null: false
       t.string :slug, null: false
-      t.references :owner, null: false, foreign_key: { to_table: :users }, type: :uuid
+      t.references :owner, null: false, foreign_key: { to_table: :users }
       t.string :billing_email
       t.string :tax_id
       t.datetime :suspended_at
       t.string :suspension_reason
-      t.jsonb :settings, default: {}
+      t.json :settings, default: {}
 
       t.timestamps
     end

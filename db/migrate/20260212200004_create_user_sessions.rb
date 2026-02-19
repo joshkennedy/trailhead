@@ -2,11 +2,11 @@
 
 class CreateUserSessions < ActiveRecord::Migration[8.1]
   def change
-    create_table :user_sessions, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid
+    create_table :user_sessions do |t|
+      t.references :user, null: false, foreign_key: true
       t.string :session_token, null: false
       t.string :user_agent
-      t.inet :ip_address
+      t.string :ip_address
       t.datetime :last_active_at
       t.datetime :expires_at
 

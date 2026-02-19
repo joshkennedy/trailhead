@@ -11,7 +11,7 @@ Production-ready Rails 8 starter for B2B SaaS with multi-tenancy, team managemen
 ## Stack
 
 - **Rails 8.1** with Hotwire (Turbo + Stimulus)
-- **PostgreSQL** with UUID primary keys
+- **PostgreSQL** or **SQLite** (auto-detected, zero-config local dev)
 - **Tailwind CSS** via `tailwindcss-rails`
 - **Devise** authentication (email/password + magic links + TOTP 2FA)
 - **Pay** gem for Stripe billing (subscriptions + usage metering)
@@ -106,7 +106,7 @@ HONEYBADGER_API_KEY=...
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/trailhead?utm_medium=integration&utm_source=button&utm_campaign=trailhead)
 
 1. Click the button above
-2. Add a PostgreSQL service in Railway (auto-links `DATABASE_URL`)
+2. Optionally add a PostgreSQL service (auto-links `DATABASE_URL`). Without it, SQLite is used automatically.
 3. Set required env vars:
    ```
    RAILS_MASTER_KEY        # from config/master.key

@@ -21,16 +21,16 @@ When generating code, **prefer simpler solutions that fit these patterns** over 
 
 ```yaml
 Framework: Rails 8.1.2
-Database: PostgreSQL (primary data)
+Database: PostgreSQL or SQLite (auto-detected from DATABASE_URL)
 Cache: Solid Cache (database-backed)
 Jobs: Solid Queue (database-backed, runs in Puma by default)
 Realtime: Solid Cable (database-backed Action Cable)
 Frontend: Hotwire (Turbo + Stimulus) + Tailwind CSS
 Auth: Devise (password, passwordless, 2FA)
 Payments: Pay gem + Stripe
-Authorization: Pundit
-Multi-tenancy: acts_as_tenant
-Admin: Avo
+Authorization: Role-based (Membership model)
+Multi-tenancy: Custom AccountScoped concern
+Admin: Madmin
 Testing: RSpec + FactoryBot
 Deploy: Kamal 2 (Docker)
 ```
@@ -40,24 +40,24 @@ Deploy: Kamal 2 (Docker)
 ### Models
 
 **Always include:**
-- Multi-tenancy scoping: `acts_as_tenant(:account)` for tenant-scoped models
-- Pundit policy: Generate with `bin/rails generate policy ModelName`
+- Multi-tenancy scoping: `include AccountScoped` for tenant-scoped models
 - Proper associations with `dependent:` options
 - Validations for required fields
 - Database indexes for foreign keys and frequently queried fields
+- Use `t.json` instead of `t.jsonb` and `t.string` instead of `t.inet` in migrations (database-portable)
 
 **Example:**
 ```ruby
 # app/models/post.rb
 class Post < ApplicationRecord
-  acts_as_tenant(:account)  # Multi-tenancy
-  
+  include AccountScoped  # Multi-tenancy (adds belongs_to :account, .current scope)
+
   belongs_to :user
   has_many :comments, dependent: :destroy
-  
+
   validates :title, presence: true, length: { maximum: 255 }
   validates :body, presence: true
-  
+
   scope :published, -> { where(published: true) }
   scope :recent, -> { order(created_at: :desc) }
 end
@@ -73,10 +73,10 @@ class CreatePosts < ActiveRecord::Migration[8.0]
       t.string :title, null: false
       t.text :body, null: false
       t.boolean :published, default: false, null: false
-      
+
       t.timestamps
     end
-    
+
     add_index :posts, [:account_id, :created_at]
     add_index :posts, [:account_id, :published]
   end
@@ -86,9 +86,9 @@ end
 ### Controllers
 
 **Standard pattern:**
-- Authenticate: `before_action :authenticate_user!`
-- Authorize with Pundit: `authorize @resource`
-- Scope queries: `policy_scope(Model)` (automatically tenant-scoped)
+- Authenticate: `before_action :authenticate_user!` (inherited from ApplicationController)
+- Scope queries: `Model.current` (scopes to `Current.account`)
+- Authorize with role checks: `require_admin!` before_action for restricted actions
 - Strong parameters
 - Respond with Turbo Streams for dynamic updates
 
@@ -96,26 +96,23 @@ end
 ```ruby
 # app/controllers/posts_controller.rb
 class PostsController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_admin!, only: [:destroy]
   before_action :set_post, only: [:show, :edit, :update, :destroy]
 
   def index
-    @posts = policy_scope(Post).includes(:user).recent
+    @posts = Post.current.includes(:user).recent
   end
 
   def show
-    authorize @post
   end
 
   def new
     @post = Post.new
-    authorize @post
   end
 
   def create
     @post = current_account.posts.build(post_params)
     @post.user = current_user
-    authorize @post
 
     if @post.save
       respond_to do |format|
@@ -128,8 +125,6 @@ class PostsController < ApplicationController
   end
 
   def update
-    authorize @post
-    
     if @post.update(post_params)
       respond_to do |format|
         format.html { redirect_to @post, notice: 'Post updated.' }
@@ -141,9 +136,8 @@ class PostsController < ApplicationController
   end
 
   def destroy
-    authorize @post
     @post.destroy
-    
+
     respond_to do |format|
       format.html { redirect_to posts_path, notice: 'Post deleted.' }
       format.turbo_stream
@@ -153,52 +147,51 @@ class PostsController < ApplicationController
   private
 
   def set_post
-    @post = Post.find(params[:id])
+    @post = Post.current.find(params[:id])
   end
 
   def post_params
     params.require(:post).permit(:title, :body, :published)
   end
+
+  def require_admin!
+    return if current_user.admin_of?(current_account)
+
+    redirect_to posts_path, alert: "Access denied."
+  end
 end
 ```
 
-### Pundit Policies
+### Authorization
 
-**Standard policy structure:**
+Authorization is role-based, using the `Membership` model. Roles are: `owner` > `admin` > `member`.
 
+**In controllers**, define a `require_admin!` (or similar) before_action:
 ```ruby
-# app/policies/post_policy.rb
-class PostPolicy < ApplicationPolicy
-  def index?
-    true  # Anyone signed in can list (scoped to their account)
-  end
+before_action :require_admin!, only: [:destroy]
 
-  def show?
-    # Can view if in same account
-    record.account_id == user.account_id
-  end
+def require_admin!
+  return if current_user.admin_of?(current_account)
 
-  def create?
-    true  # Any authenticated user can create
-  end
-
-  def update?
-    # Can edit own posts or if admin
-    user.admin? || record.user_id == user.id
-  end
-
-  def destroy?
-    user.admin? || record.user_id == user.id
-  end
-
-  class Scope < Scope
-    def resolve
-      # Automatically scoped to current account via acts_as_tenant
-      scope.all
-    end
-  end
+  redirect_to root_path, alert: "Access denied."
 end
 ```
+
+**For billing/owner-only actions**, use Membership permission methods:
+```ruby
+def require_billing_access!
+  return if Current.membership&.can_manage_billing?
+
+  redirect_to dashboard_path, alert: "Only account owners can manage billing."
+end
+```
+
+**Available role checks:**
+- `current_user.admin_of?(account)` — owner or admin
+- `current_user.owner_of?(account)` — owner only
+- `current_user.member_of?(account)` — any active member
+- `Current.membership.can_manage_billing?` — owner only
+- `Current.membership.can_invite_members?` — admin or owner
 
 ### Views (ERB + Tailwind)
 
@@ -208,7 +201,7 @@ end
 <!-- app/views/posts/index.html.erb -->
 <div class="space-y-4">
   <%= turbo_frame_tag "modal" %>
-  
+
   <div class="flex justify-between items-center">
     <h1 class="text-2xl font-bold">Posts</h1>
     <%= link_to "New Post", new_post_path,
@@ -229,7 +222,7 @@ end
     <%= link_to post.title, post %>
   </h3>
   <p class="text-gray-600 mt-2"><%= truncate(post.body, length: 200) %></p>
-  
+
   <div class="mt-4 flex gap-2">
     <%= link_to "Edit", edit_post_path(post),
         data: { turbo_frame: "modal" },
@@ -271,7 +264,7 @@ end
 # app/jobs/send_welcome_email_job.rb
 class SendWelcomeEmailJob < ApplicationJob
   queue_as :default
-  
+
   retry_on Net::OpenTimeout, wait: :exponentially_longer, attempts: 5
   discard_on ActiveJob::DeserializationError
 
@@ -310,7 +303,7 @@ require 'rails_helper'
 RSpec.describe Post, type: :model do
   let(:account) { create(:account) }
   let(:user) { create(:user, account: account) }
-  
+
   describe 'validations' do
     it { should validate_presence_of(:title) }
     it { should validate_presence_of(:body) }
@@ -326,7 +319,7 @@ RSpec.describe Post, type: :model do
     it 'returns published posts' do
       published = create(:post, published: true, account: account)
       draft = create(:post, published: false, account: account)
-      
+
       expect(Post.published).to include(published)
       expect(Post.published).not_to include(draft)
     end
@@ -352,10 +345,10 @@ RSpec.describe "Posts", type: :request do
       get posts_path
       expect(response).to have_http_status(:success)
     end
-    
+
     it "scopes to current account" do
       other_account_post = create(:post, account: create(:account))
-      
+
       get posts_path
       expect(response.body).to include(post.title)
       expect(response.body).not_to include(other_account_post.title)
@@ -368,11 +361,11 @@ RSpec.describe "Posts", type: :request do
         post posts_path, params: { post: { title: "Test", body: "Body" } }
       }.to change(Post, :count).by(1)
     end
-    
+
     it "assigns to current user and account" do
       post posts_path, params: { post: { title: "Test", body: "Body" } }
       new_post = Post.last
-      
+
       expect(new_post.user).to eq(user)
       expect(new_post.account).to eq(account)
     end
@@ -385,35 +378,28 @@ end
 ### Multi-Tenancy
 
 **ALWAYS remember:**
-- Use `acts_as_tenant(:account)` on tenant-scoped models
-- Set tenant in controller: `set_current_tenant(current_account)`
+- Use `include AccountScoped` on tenant-scoped models
+- `AccountScoping` concern sets `Current.account` per-request (included in ApplicationController)
+- Use `Model.current` in controllers to scope queries to the current account
 - Test tenant isolation in specs
-- Never query across tenants (use `unscoped` only with extreme caution)
+- Never query across tenants (use unscoped `Model.all` only with extreme caution, e.g. admin views)
 
-**ApplicationController should have:**
+**ApplicationController:**
 
 ```ruby
 class ApplicationController < ActionController::Base
-  include Pundit::Authorization
-  
-  before_action :set_current_tenant
-  
-  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+  include AccountScoping
+
+  before_action :authenticate_user!
 
   private
 
-  def set_current_tenant
-    set_current_tenant(current_account) if user_signed_in?
+  def after_sign_in_path_for(_resource)
+    dashboard_path
   end
 
-  def current_account
-    current_user&.account
-  end
-  helper_method :current_account
-
-  def user_not_authorized
-    flash[:alert] = "You are not authorized to perform this action."
-    redirect_to(request.referrer || root_path)
+  def after_sign_out_path_for(_resource)
+    new_user_session_path
   end
 end
 ```
@@ -541,7 +527,7 @@ kamal app exec "bin/rails db:migrate"
 
 ## Anti-Patterns to Avoid
 
-❌ **Don't:**
+**Don't:**
 - Add Redis when Solid Cache/Queue/Cable work fine
 - Build a separate API unless you actually need one
 - Introduce microservices prematurely
@@ -551,7 +537,7 @@ kamal app exec "bin/rails db:migrate"
 - Add JavaScript when Turbo can handle it
 - Nest resources more than 1 level deep in routes
 
-✅ **Do:**
+**Do:**
 - Use database transactions for multi-step operations
 - Add indexes for performance-critical queries
 - Write tests for business logic
@@ -566,8 +552,9 @@ kamal app exec "bin/rails db:migrate"
 ```bash
 bin/rails generate model Post account:references user:references title:string body:text published:boolean
 bin/rails generate controller Posts
-bin/rails generate policy Post
 bin/rails db:migrate
+# Then add `include AccountScoped` to the model
+# Madmin resources go in app/madmin/resources/ (see existing resources for examples)
 ```
 
 ### Add a background job:
@@ -580,16 +567,11 @@ bin/rails generate job ProcessReport
 bin/rails generate mailer UserMailer welcome_email
 ```
 
-### Add an Avo resource:
-```bash
-bin/rails generate avo:resource Post
-```
-
 ### Run tests:
 ```bash
-bin/rspec
-bin/rspec spec/models/post_spec.rb  # Single file
-bin/rspec spec/models/post_spec.rb:15  # Single test line
+bundle exec rspec
+bundle exec rspec spec/models/post_spec.rb  # Single file
+bundle exec rspec spec/models/post_spec.rb:15  # Single test line
 ```
 
 ### Deploy:
@@ -601,8 +583,8 @@ kamal console  # Rails console on server
 
 ## Questions to Ask Before Generating Code
 
-1. **Does this need to be tenant-scoped?** → Use `acts_as_tenant`
-2. **Who can access this?** → Write Pundit policy
+1. **Does this need to be tenant-scoped?** → Use `include AccountScoped`
+2. **Who can access this?** → Add role check via Membership (`require_admin!`, `can_manage_billing?`)
 3. **Should this be async?** → Create a background job
 4. **Does the UI need to be dynamic?** → Use Turbo Frames/Streams
 5. **Will this query be slow?** → Add database indexes
@@ -614,7 +596,7 @@ kamal console  # Rails console on server
 - [Hotwire Docs](https://hotwired.dev/)
 - [Tailwind Docs](https://tailwindcss.com/)
 - [Kamal Docs](https://kamal-deploy.org/)
-- [Pundit README](https://github.com/varvet/pundit)
+- [Madmin](https://github.com/excid3/madmin)
 - [Solid Queue](https://github.com/rails/solid_queue)
 
 ---

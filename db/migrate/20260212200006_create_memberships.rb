@@ -2,12 +2,12 @@
 
 class CreateMemberships < ActiveRecord::Migration[8.1]
   def change
-    create_table :memberships, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid
-      t.references :account, null: false, foreign_key: true, type: :uuid
+    create_table :memberships do |t|
+      t.references :user, null: false, foreign_key: true
+      t.references :account, null: false, foreign_key: true
       t.string :role, null: false, default: "member"
       t.string :status, null: false, default: "invited"
-      t.references :invited_by, foreign_key: { to_table: :users }, type: :uuid
+      t.references :invited_by, foreign_key: { to_table: :users }
       t.datetime :invited_at
       t.datetime :accepted_at
       t.datetime :suspended_at

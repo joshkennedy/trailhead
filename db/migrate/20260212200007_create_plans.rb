@@ -2,7 +2,7 @@
 
 class CreatePlans < ActiveRecord::Migration[8.1]
   def change
-    create_table :plans, id: :uuid do |t|
+    create_table :plans do |t|
       t.string :name, null: false
       t.string :slug, null: false
       t.string :stripe_price_id
@@ -11,8 +11,8 @@ class CreatePlans < ActiveRecord::Migration[8.1]
       t.string :currency, null: false, default: "usd"
       t.string :interval, null: false, default: "month"
       t.integer :seat_limit, default: 5
-      t.jsonb :usage_limits, default: {}
-      t.jsonb :features, default: {}
+      t.json :usage_limits, default: {}
+      t.json :features, default: {}
       t.boolean :visible, default: true
       t.integer :position, default: 0
       t.text :description

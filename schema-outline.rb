@@ -13,7 +13,7 @@
 
 class DeviseCreateUsers < ActiveRecord::Migration[8.0]
   def change
-    create_table :users, id: :uuid do |t|
+    create_table :users do |t|
       # Core Devise fields
       t.string :email,              null: false, default: ""
       t.string :encrypted_password, null: false, default: ""
@@ -29,8 +29,8 @@ class DeviseCreateUsers < ActiveRecord::Migration[8.0]
       t.integer  :sign_in_count, default: 0, null: false
       t.datetime :current_sign_in_at
       t.datetime :last_sign_in_at
-      t.inet     :current_sign_in_ip
-      t.inet     :last_sign_in_ip
+      t.string     :current_sign_in_ip
+      t.string     :last_sign_in_ip
 
       # Confirmable (REQUIRED for email verification)
       t.string   :confirmation_token
@@ -46,7 +46,7 @@ class DeviseCreateUsers < ActiveRecord::Migration[8.0]
       # Additional fields
       t.string :name
       t.string :time_zone, default: "UTC"
-      t.jsonb  :preferences, default: {}
+      t.json  :preferences, default: {}
 
       t.timestamps
     end
@@ -61,12 +61,11 @@ end
 # Magic Links (Passwordless Auth)
 class CreateMagicLinks < ActiveRecord::Migration[8.0]
   def change
-    create_table :magic_links, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid
-      t.string :token_digest, null: false  # SHA256 digest of token
+    create_table :magic_links do |t|
+      t.references :user, null: false, foreign_key: true      t.string :token_digest, null: false  # SHA256 digest of token
       t.datetime :expires_at, null: false  # 15 minutes from creation
       t.datetime :consumed_at              # When link was used
-      t.inet :ip_address                   # Request IP for security
+      t.string :ip_address                   # Request IP for security
       t.string :user_agent                 # Browser/device info
 
       t.timestamps
@@ -81,14 +80,14 @@ end
 # TOTP (Two-Factor Auth)
 class CreateTotpCredentials < ActiveRecord::Migration[8.0]
   def change
-    create_table :totp_credentials, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid, index: { unique: true }
+    create_table :totp_credentials do |t|
+      t.references :user, null: false, foreign_key: true, index: { unique: true }
 
       # Encrypted OTP secret (use Rails 7+ encryption or attr_encrypted gem)
       t.string :otp_secret_encrypted, null: false
 
       # Backup/recovery codes (store bcrypt hashes)
-      t.jsonb :recovery_codes, default: []
+      t.json :recovery_codes, default: []
 
       # Track when 2FA was enabled
       t.datetime :enabled_at
@@ -105,12 +104,11 @@ end
 # Sessions (Single-Device Enforcement)
 class CreateSessions < ActiveRecord::Migration[8.0]
   def change
-    create_table :sessions, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid
-
+    create_table :sessions do |t|
+      t.references :user, null: false, foreign_key: true
       t.string :session_token, null: false  # Secure random token
       t.string :user_agent                  # Browser fingerprint
-      t.inet :ip_address                    # Login IP
+      t.string :ip_address                    # Login IP
 
       t.datetime :last_active_at           # Touch on each request
       t.datetime :expires_at               # 30 days from creation
@@ -130,13 +128,12 @@ end
 
 class CreateAccounts < ActiveRecord::Migration[8.0]
   def change
-    create_table :accounts, id: :uuid do |t|
+    create_table :accounts do |t|
       t.string :name, null: false
       t.string :slug, null: false          # URL-friendly identifier
 
       # Owner reference (user who created the account)
-      t.references :owner, null: false, foreign_key: { to_table: :users }, type: :uuid
-
+      t.references :owner, null: false, foreign_key: { to_table: :users }
       # Billing
       t.string :billing_email              # May differ from owner email
       t.string :tax_id                     # VAT, EIN, etc.
@@ -146,7 +143,7 @@ class CreateAccounts < ActiveRecord::Migration[8.0]
       t.string :suspension_reason
 
       # Settings (JSON blob for flexibility)
-      t.jsonb :settings, default: {}
+      t.json :settings, default: {}
       # Example settings:
       # {
       #   "timezone": "America/New_York",
@@ -166,10 +163,8 @@ end
 # Memberships (User ↔ Account Join Table)
 class CreateMemberships < ActiveRecord::Migration[8.0]
   def change
-    create_table :memberships, id: :uuid do |t|
-      t.references :user, null: false, foreign_key: true, type: :uuid
-      t.references :account, null: false, foreign_key: true, type: :uuid
-
+    create_table :memberships do |t|
+      t.references :user, null: false, foreign_key: true      t.references :account, null: false, foreign_key: true
       # Role-based access
       t.string :role, null: false, default: "member"
       # Enum: owner, admin, member
@@ -179,8 +174,7 @@ class CreateMemberships < ActiveRecord::Migration[8.0]
       # Enum: invited, active, suspended
 
       # Invitation tracking
-      t.references :invited_by, foreign_key: { to_table: :users }, type: :uuid
-      t.datetime :invited_at
+      t.references :invited_by, foreign_key: { to_table: :users }      t.datetime :invited_at
       t.datetime :accepted_at
 
       # Suspension (by admin)
@@ -206,7 +200,7 @@ end
 # Plans (Static or Stripe-synced)
 class CreatePlans < ActiveRecord::Migration[8.0]
   def change
-    create_table :plans, id: :uuid do |t|
+    create_table :plans do |t|
       t.string :name, null: false                  # "Starter", "Pro", "Enterprise"
       t.string :slug, null: false                  # "starter", "pro", "enterprise"
 
@@ -221,11 +215,11 @@ class CreatePlans < ActiveRecord::Migration[8.0]
 
       # Limits
       t.integer :seat_limit, default: 5            # Max users per account
-      t.jsonb :usage_limits, default: {}
+      t.json :usage_limits, default: {}
       # Example: { "api_calls": 10000, "storage_gb": 10 }
 
       # Features (boolean flags)
-      t.jsonb :features, default: {}
+      t.json :features, default: {}
       # Example: { "api_access": true, "advanced_reports": false, "sso": false }
 
       # Visibility
@@ -246,14 +240,13 @@ end
 # Usage Records (Metered Billing)
 class CreateUsageRecords < ActiveRecord::Migration[8.0]
   def change
-    create_table :usage_records, id: :uuid do |t|
-      t.references :account, null: false, foreign_key: true, type: :uuid
-
+    create_table :usage_records do |t|
+      t.references :account, null: false, foreign_key: true
       t.string :metric, null: false               # "api_calls", "storage_gb", etc.
       t.integer :quantity, null: false, default: 1
 
       t.datetime :recorded_at, null: false        # When usage occurred
-      t.jsonb :metadata, default: {}              # Optional context
+      t.json :metadata, default: {}              # Optional context
 
       # Stripe reporting
       t.boolean :reported_to_stripe, default: false
@@ -275,20 +268,18 @@ end
 # This is a sample resource to demonstrate multi-tenant scoping
 class CreateProjects < ActiveRecord::Migration[8.0]
   def change
-    create_table :projects, id: :uuid do |t|
+    create_table :projects do |t|
       # CRITICAL: Every tenant-scoped model MUST have account_id
-      t.references :account, null: false, foreign_key: true, type: :uuid
-
+      t.references :account, null: false, foreign_key: true
       # Creator
-      t.references :created_by, null: false, foreign_key: { to_table: :users }, type: :uuid
-
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
       # Project data
       t.string :name, null: false
       t.text :description
       t.string :status, default: "active"         # active, archived, deleted
 
       # Metadata
-      t.jsonb :metadata, default: {}
+      t.json :metadata, default: {}
 
       t.timestamps
     end
@@ -390,25 +381,6 @@ end
 # 8. Performance indexes
 
 # =============================================================================
-# UUID PRIMARY KEYS
-# =============================================================================
-
-# Rails 8 supports UUIDs natively. Enable in an initializer:
-#
-# # config/initializers/generators.rb
-# Rails.application.config.generators do |g|
-#   g.orm :active_record, primary_key_type: :uuid
-# end
-#
-# Or enable pgcrypto extension in a migration:
-#
-# class EnableUuidExtension < ActiveRecord::Migration[8.0]
-#   def change
-#     enable_extension 'pgcrypto' unless extension_enabled?('pgcrypto')
-#   end
-# end
-
-# =============================================================================
 # FOREIGN KEY CONSTRAINTS
 # =============================================================================
 
@@ -443,10 +415,10 @@ end
 # - Custom business logic
 
 # =============================================================================
-# JSONB COLUMNS
+# JSON COLUMNS
 # =============================================================================
 
-# Recommended JSONB columns with default empty objects:
+# Recommended JSON columns with default empty objects:
 #
 # - users.preferences
 # - accounts.settings
@@ -455,8 +427,5 @@ end
 # - usage_records.metadata
 # - projects.metadata
 #
-# Benefits:
-# - Schema flexibility without migrations
-# - Queryable via Postgres JSON operators
-# - Indexed via GIN indexes if needed:
-#   add_index :accounts, :settings, using: :gin
+# Rails maps `json` to `jsonb` on PostgreSQL automatically.
+# On SQLite, JSON columns are stored as text with JSON functions.

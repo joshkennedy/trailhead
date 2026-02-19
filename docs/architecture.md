@@ -73,68 +73,68 @@ erDiagram
     User ||--o{ MagicLink : "has many (time-limited)"
 
     User {
-        uuid id PK
+        bigint id PK
         string email UK
         string encrypted_password
         datetime confirmed_at
         datetime current_sign_in_at
-        inet current_sign_in_ip
+        string current_sign_in_ip
         datetime locked_at
         timestamps
     }
 
     Account {
-        uuid id PK
+        bigint id PK
         string name
         string slug UK
-        uuid owner_id FK
+        bigint owner_id FK
         string billing_email
-        jsonb settings
+        json settings
         datetime suspended_at
         timestamps
     }
 
     Membership {
-        uuid id PK
-        uuid user_id FK
-        uuid account_id FK
+        bigint id PK
+        bigint user_id FK
+        bigint account_id FK
         string role
         string status
-        uuid invited_by_id FK
+        bigint invited_by_id FK
         datetime accepted_at
         timestamps
         unique_index user_id_account_id
     }
 
     Subscription {
-        uuid id PK
-        uuid account_id FK
+        bigint id PK
+        bigint account_id FK
         string processor
         string processor_id
         string status
         datetime trial_ends_at
         datetime ends_at
-        uuid plan_id FK
+        bigint plan_id FK
         integer quantity
         timestamps
     }
 
     Plan {
-        uuid id PK
+        bigint id PK
         string name
         string slug UK
         integer amount_cents
         string interval
         integer seat_limit
-        jsonb features
-        jsonb usage_limits
+        json features
+        json usage_limits
         boolean visible
         timestamps
     }
 
     UsageRecord {
-        uuid id PK
-        uuid account_id FK
+        bigint id PK
+        bigint account_id FK
         string metric
         integer quantity
         datetime recorded_at
@@ -142,25 +142,25 @@ erDiagram
     }
 
     Session {
-        uuid id PK
-        uuid user_id FK
+        bigint id PK
+        bigint user_id FK
         string user_agent
-        inet ip_address
+        string ip_address
         datetime last_active_at
         timestamps
     }
 
     TotpCredential {
-        uuid id PK
-        uuid user_id FK
+        bigint id PK
+        bigint user_id FK
         string otp_secret_encrypted
         datetime enabled_at
         timestamps
     }
 
     MagicLink {
-        uuid id PK
-        uuid user_id FK
+        bigint id PK
+        bigint user_id FK
         string token_digest
         datetime expires_at
         datetime consumed_at
