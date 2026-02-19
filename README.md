@@ -6,6 +6,8 @@
 
 Production-ready Rails 8 starter for B2B SaaS with multi-tenancy, team management, Stripe billing, and admin dashboard.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/trailhead?utm_medium=integration&utm_source=button&utm_campaign=trailhead)
+
 ## Stack
 
 - **Rails 8.1** with Hotwire (Turbo + Stimulus)
@@ -99,7 +101,26 @@ HONEYBADGER_API_KEY=...
 
 ## Deployment
 
-Kamal config ready for Hetzner Cloud:
+### Railway (One-click)
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/trailhead?utm_medium=integration&utm_source=button&utm_campaign=trailhead)
+
+1. Click the button above
+2. Add a PostgreSQL service in Railway (auto-links `DATABASE_URL`)
+3. Set required env vars:
+   ```
+   RAILS_MASTER_KEY        # from config/master.key
+   SECRET_KEY_BASE         # generate with: rails secret
+   HOST                    # your Railway domain, e.g. trailhead.up.railway.app
+   ```
+4. Optional — add a worker service using the same repo with start command:
+   ```
+   bundle exec rails solid_queue:start
+   ```
+
+Railway auto-runs `db:prepare` on first deploy via `railway.toml`. No Redis required — Solid Queue/Cache/Cable are database-backed.
+
+### Kamal (Hetzner / self-hosted)
 
 1. Update `config/deploy.yml` with server IPs, domain, registry
 2. Set secrets in `.kamal/secrets`
