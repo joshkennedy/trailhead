@@ -11,19 +11,17 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="h-full">
-    <% if user_signed_in? %>
-      <%= render "shared/navbar" %>
-    <% end %>
+  <body class="h-full flex items-center justify-center">
+    <div class="w-full max-w-md px-4">
+      <div class="text-center mb-8">
+        <%= link_to "Trailhead", root_path, class: "text-2xl font-bold text-indigo-600" %>
+      </div>
 
-    <% if content_for?(:full_width) %>
       <%= render "shared/flash" %>
-      <%= yield %>
-    <% else %>
-      <main class="<%= user_signed_in? ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' %>">
-        <%= render "shared/flash" %>
+
+      <div class="bg-white shadow rounded-lg p-8">
         <%= yield %>
-      </main>
-    <% end %>
+      </div>
+    </div>
   </body>
 </html>

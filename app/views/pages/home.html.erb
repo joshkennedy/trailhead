@@ -1,0 +1,82 @@
+<% content_for(:full_width, true) %>
+<% content_for(:title, "Trailhead — Rails SaaS Starter Kit") %>
+
+<%# Sticky nav %>
+<nav class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+    <span class="text-xl font-bold text-indigo-600">Trailhead</span>
+    <div class="flex items-center space-x-4">
+      <%= link_to "Sign in", new_user_session_path, class: "text-sm font-medium text-gray-700 hover:text-indigo-600" %>
+      <%= link_to "Get started", new_user_registration_path, class: "text-sm font-medium px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700" %>
+    </div>
+  </div>
+</nav>
+
+<%# Hero %>
+<section class="bg-white">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+      Ship your SaaS <span class="text-indigo-600">faster</span>
+    </h1>
+    <p class="mt-6 text-lg text-gray-600 max-w-2xl mx-auto">
+      Trailhead is an opinionated Rails 8 starter kit with multi-tenancy, authentication, Stripe billing, and deployment baked in. Stop rebuilding boilerplate&mdash;start building your product.
+    </p>
+    <div class="mt-10 flex justify-center gap-4">
+      <%= link_to "Get started free", new_user_registration_path, class: "px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium" %>
+      <%= link_to "Sign in", new_user_session_path, class: "px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium" %>
+    </div>
+  </div>
+</section>
+
+<%# Features %>
+<section class="bg-gray-50 py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-2xl font-bold text-gray-900 text-center">Everything you need to launch</h2>
+    <p class="mt-2 text-gray-600 text-center">Production-ready features so you can focus on what makes your product unique.</p>
+
+    <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Multi-Tenancy</h3>
+        <p class="mt-2 text-sm text-gray-600">Row-level tenant isolation with account switching, team management, and role-based permissions out of the box.</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Authentication</h3>
+        <p class="mt-2 text-sm text-gray-600">Devise with email/password, magic links, two-factor TOTP, confirmable, lockable, and session tracking.</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Stripe Billing</h3>
+        <p class="mt-2 text-sm text-gray-600">Checkout, customer portal, plans with seat limits, metered usage reporting&mdash;powered by the Pay gem.</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Background Jobs</h3>
+        <p class="mt-2 text-sm text-gray-600">Solid Queue, Solid Cache, and Solid Cable&mdash;all database-backed. No Redis required.</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Deployment</h3>
+        <p class="mt-2 text-sm text-gray-600">One-click Railway deploy or Kamal 2 to any server. Docker-ready with health checks included.</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-gray-900">Modern Frontend</h3>
+        <p class="mt-2 text-sm text-gray-600">Hotwire with Turbo and Stimulus, Tailwind CSS v4, importmap&mdash;no Node.js needed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# Bottom CTA %>
+<section class="bg-indigo-600 py-16">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-2xl font-bold text-white">Ready to get started?</h2>
+    <p class="mt-2 text-indigo-100">Create your free account and start building today.</p>
+    <div class="mt-8">
+      <%= link_to "Get started free", new_user_registration_path, class: "px-6 py-3 bg-white text-indigo-600 rounded-md hover:bg-indigo-50 font-medium" %>
+    </div>
+  </div>
+</section>
+
+<%# Footer %>
+<footer class="bg-white border-t border-gray-200 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+    &copy; <%= Date.current.year %> Trailhead. Built with Rails&nbsp;8.
+  </div>
+</footer>

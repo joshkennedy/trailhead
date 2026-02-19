@@ -33,5 +33,8 @@ Rails.application.routes.draw do
   end
 
   # Root
-  root "dashboard#show"
+  authenticated :user do
+    root "dashboard#show", as: :authenticated_root
+  end
+  root "pages#home"
 end
