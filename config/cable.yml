@@ -10,8 +10,10 @@ test:
 
 production:
   adapter: solid_cable
+<% if ENV["DATABASE_URL"]&.start_with?("postgres") %>
   connects_to:
     database:
       writing: cable
+<% end %>
   polling_interval: 0.1.seconds
   message_retention: 1.day

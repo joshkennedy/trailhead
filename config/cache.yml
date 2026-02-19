@@ -12,5 +12,7 @@ test:
   <<: *default
 
 production:
-  database: cache
   <<: *default
+<% if ENV["DATABASE_URL"]&.start_with?("postgres") %>
+  database: cache
+<% end %>
