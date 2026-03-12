@@ -49,7 +49,7 @@ gem "rqrcode"                # QR codes for TOTP setup
 
 # Payments
 gem "pay", "~> 11.4"
-gem "stripe", "~> 18.3"
+gem "stripe", "~> 18.4"
 
 # Admin
 gem "madmin"
